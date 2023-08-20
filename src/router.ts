@@ -3,6 +3,22 @@ import { Router } from 'itty-router';
 // now let's create a router (note the lack of "new")
 const router = Router();
 
+function createHeaders() { 
+    return {
+        'Content-Type':                 'application/json',
+        'Access-Control-Allow-Origin':  'https://letsvalidate.org',
+        'Access-Control-Allow-Methods': 'GET',
+    };
+}
+
+// GET user's list of monitored certs
+router.get( '/api/v001/monitored-certificates', () => new Response( '[]', { headers: createHeaders() } ));
+
+
+
+// {headers: { 'Content-Type': 'application/json'} } ));
+
+/*
 // GET collection index
 router.get('/api/todos', () => new Response('Todos Index!'));
 
@@ -15,6 +31,7 @@ router.post('/api/todos', async (request) => {
 
 	return new Response('Creating Todo: ' + JSON.stringify(content));
 });
+*/
 
 // 404 for everything else
 router.all('*', () => new Response('Not Found.', { status: 404 }));
