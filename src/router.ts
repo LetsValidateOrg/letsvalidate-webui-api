@@ -5,14 +5,22 @@ const router = Router();
 
 function createHeaders() { 
     return {
-        'Content-Type':                 'application/json',
+        'Content-Type':                 'application/json;charset=UTF-8',
         'Access-Control-Allow-Origin':  'https://letsvalidate.org',
         'Access-Control-Allow-Methods': 'GET',
     };
 }
 
+function handleMonitoredCertificates(request: Request): Promise<Response> {
+
+    // See if we got an auth header
+    return new Response( 
+        JSON.stringify( { 'headers': [...request.headers] }, null, 4 ), { headers: createHeaders() } );
+}
+
 // GET user's list of monitored certs
-router.get( '/api/v001/monitored-certificates', () => new Response( '[]', { headers: createHeaders() } ));
+router.get( '/api/v001/monitored-certificates', (request) => handleMonitoredCertificates(request) );
+//router.get( '/api/v001/monitored-certificates', () => new Response( '[]', { headers: createHeaders() } ));
 
 
 

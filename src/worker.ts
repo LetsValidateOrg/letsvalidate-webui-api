@@ -17,6 +17,15 @@ export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 		// You'll find it helpful to parse the request.url string into a URL object. Learn more at https://developer.mozilla.org/en-US/docs/Web/API/URL
 		const url = new URL(request.url);
+        
+        /*
+        return new Response( JSON.stringify( 
+            { 
+                'headers': [...request.headers],
+                'cf': request.cf,
+            }, null, 4 )
+        );
+        */
 
 		if (url.pathname.startsWith('/api/v001/')) {
 			// You can also use more robust routing
