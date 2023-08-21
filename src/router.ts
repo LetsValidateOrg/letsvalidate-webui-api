@@ -25,6 +25,12 @@ function failedAuth() {
        
 };
 
+function authorizationHeaderIsValid(authHeader: string) : boolean {
+    console.log("Checking auth header value \"" + authHeader + "\"");
+
+    return true;
+}
+
 function handleMonitoredCertificates(request: Request): Promise<Response> {
 
     // Oh my god the pain of dealing with headers, as they come in via an opaque object (thanks fetch API)
@@ -36,7 +42,7 @@ function handleMonitoredCertificates(request: Request): Promise<Response> {
     const cloudflareRequestProperties : IncomingRequestCfProperties = request.cf;
 
     // See if user authenticated
-    if ( ! ("Authorization" in requestHeaders) ) {
+    if ( (!("Authorization" in requestHeaders)) || (successfullyValidatedAuthorizationHeader(requestHeaders['Authorization']) === false) ) {
         return failedAuth();
     }
 

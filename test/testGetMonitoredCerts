@@ -1,0 +1,7 @@
+#!/usr/bin/bash
+
+CURL="/usr/bin/curl"
+HEADER_FILE="curlheaders_getMonitoredCerts.txt"
+API_ENDPOINT="https://letsvalidate-webui-api.publicntp.workers.dev"
+
+${CURL} -i -H @${HEADER_FILE} ${API_ENDPOINT}
