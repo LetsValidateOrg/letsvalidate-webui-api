@@ -11,11 +11,45 @@ function createHeaders() {
     };
 }
 
+// Runtime API's available to us in Worker environment: https://developers.cloudflare.com/workers/runtime-apis/
+
+// Structure of an incoming request: https://developers.cloudflare.com/workers/runtime-apis/request/#properties
+
+function failedAuth() {
+    return new Response( JSON.stringify( {"error": "Missing or invalid Authorization header in query"}, null, 2), 
+        { 
+            status      : 401,
+            headers     : createHeaders(),
+        } 
+    );
+       
+};
+
 function handleMonitoredCertificates(request: Request): Promise<Response> {
+
+    // Oh my god the pain of dealing with headers, as they come in via an opaque object (thanks fetch API)
+    //      https://alexewerlof.medium.com/converting-fetchs-response-headers-to-a-plain-serializable-javascript-object-51fd3ee0e090
+    const requestHeaders:[string: string] = Object.fromEntries(request.headers.entries());
+
+    // Cloudflare specific properites about a request:
+    //      https://developers.cloudflare.com/workers/runtime-apis/request/#incomingrequestcfproperties
+    const cloudflareRequestProperties : IncomingRequestCfProperties = request.cf;
+
+    // See if user authenticated
+    if ( ! ("Authorization" in requestHeaders) ) {
+        return failedAuth();
+    }
+
+    const returnObj:[string:[string:string]] = {
+        'monitored_certificates'    : [],
+        'metadata': {
+            'cloudflare_edge_location'  : cloudflareRequestProperties.colo.toLowerCase(),
+        },
+    }
 
     // See if we got an auth header
     return new Response( 
-        JSON.stringify( { 'headers': [...request.headers] }, null, 4 ), { headers: createHeaders() } );
+        JSON.stringify( returnObj, null, 2 ), { headers: createHeaders() } );
 }
 
 // GET user's list of monitored certs
