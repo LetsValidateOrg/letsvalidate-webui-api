@@ -29,7 +29,7 @@ export default {
 
 		if (url.pathname.startsWith('/api/v001/')) {
 			// You can also use more robust routing
-			return apiRouter.handle(request);
+			return apiRouter.handle(request, env, ctx);
 		}
 
 		return new Response( 'Not found.', { status: 404 } );
