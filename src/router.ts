@@ -9,7 +9,8 @@ function createHeaders() {
     return {
         'Content-Type':                 'application/json;charset=UTF-8',
         'Access-Control-Allow-Origin':  'https://letsvalidate.org',
-        'Access-Control-Allow-Methods': 'GET',
+        'Access-Control-Allow-Methods': 'OPTIONS, GET, POST, PUT, DELETE',
+        'Access-Control-Allow-Headers': 'Authorization',
     };
 }
 
@@ -49,16 +50,18 @@ async function validateToken(authHeader: string, env: Env) : Promise<boolean> {
     }
 
     // Process access token from Cognito
+    /*
     const cognitoJwt:string = tokens[1];
-
     console.log("JWT value: " + cognitoJwt);
+    */
 
     // Get our Wrangler secrets for userPoolId and clientId
     const cognitoUserPoolId:string  = env.AWS_COGNITO_USER_POOL_ID;
     const cognitoClientId:string    = env.AWS_COGNITO_CLIENT_ID;
+    /*
     console.log("User Pool ID: " + cognitoUserPoolId );
     console.log("Client ID: " + cognitoClientId );
-
+    */
 
     // get function pointer to verifier
     const verifierOptions = {
@@ -76,7 +79,7 @@ async function validateToken(authHeader: string, env: Env) : Promise<boolean> {
 
     // If validation fails, it'll throw a JwtVerificationError we can catch in the caller
     const validatedTokenData = verifyFunctionPointer( trimmedString );
-    console.log("Token validated successfully!")
+    //console.log("Token validated successfully!")
     return validatedTokenData;
 
     // https://gist.github.com/bcnzer/e6a7265fd368fa22ef960b17b9a76488
@@ -87,6 +90,28 @@ async function validateToken(authHeader: string, env: Env) : Promise<boolean> {
 
     // https://jwt.io/introduction
 
+}
+
+async function getKvDataForUser(env: Env, userId: string) {
+    // Worker KV binding for this worker is LETSVALIDATE_KV
+    const userStateKey : string = "user_state_" + userId;
+
+    console.log("Looking up KV data entry in namespace LETSVALIDATE_KV for key \"" + userStateKey + "\"" );
+
+    // The "type" param parses the string into a JSON object
+    const kvData = await env.LETSVALIDATE_KV.get(userStateKey);
+
+    let returnData = [];
+    if ( kvData === null ) {
+        console.log("No Worker KV entry for user " + userId );
+    } else {
+        console.log( "Got data:\n" + JSON.stringify(kvData));
+        returnData = kvData;
+    }
+
+    //console.log("Returning " + JSON.stringify(returnData));
+
+    return returnData;
 }
 
 async function handleMonitoredCertificates(request: Request, env: Env): Promise<Response> {
@@ -110,48 +135,36 @@ async function handleMonitoredCertificates(request: Request, env: Env): Promise<
     try {
         verifiedTokenData = await validateToken( requestHeaders['authorization'], env );
     } catch (exception) {
-        return failedAuth(exception.message);
+        return failedAuth("Authorization JWT processing: " + exception.message);
     }
 
     const userId = verifiedTokenData.payload.sub;
 
     console.log("User auth token successfully validated");
 
-    const returnObj:[string:[string:string]] = {
-        'monitored_certificates'    : [],
+    const kvData = await getKvDataForUser(env, userId);
+
+    //console.log("KV data we're putting in the return obj: " + JSON.stringify(kvData));
+
+    const returnObj = {
+        'monitored_certificates'    : kvData,
         'metadata': {
-            'cloudflare_edge_location'  : cloudflareRequestProperties.colo.toLowerCase(),
-            'cognito_user_id'           : userId,
+            'api_endpoint': {
+                'datacenter_iata_code'                          : "cf/" + cloudflareRequestProperties.colo.toLowerCase(),
+                'client_geoip_iso_3166_alpha_2_country_code'    : request.cf.country,
+            },
         },
     }
 
-    // See if we got an auth header
     return new Response( 
         JSON.stringify( returnObj, null, 2 ), { headers: createHeaders() } );
 }
 
+// Preflight
+router.options( '/api/v001/*', () => new Response( null, { headers: createHeaders(), status: 204 } ));
+
 // GET user's list of monitored certs
 router.get( '/api/v001/monitored-certificates', (request, env) => handleMonitoredCertificates(request, env) );
-//router.get( '/api/v001/monitored-certificates', () => new Response( '[]', { headers: createHeaders() } ));
-
-
-
-// {headers: { 'Content-Type': 'application/json'} } ));
-
-/*
-// GET collection index
-router.get('/api/todos', () => new Response('Todos Index!'));
-
-// GET item
-router.get('/api/todos/:id', ({ params }) => new Response(`Todo #${params.id}`));
-
-// POST to the collection (we'll use async here)
-router.post('/api/todos', async (request) => {
-	const content = await request.json();
-
-	return new Response('Creating Todo: ' + JSON.stringify(content));
-});
-*/
 
 // 404 for everything else
 router.all('*', () => new Response('Not Found.', { status: 404 }));
