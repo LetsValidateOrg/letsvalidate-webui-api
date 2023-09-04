@@ -99,9 +99,9 @@ async function getKvDataForUser(env: Env, userId: string) {
     console.log("Looking up KV data entry in namespace LETSVALIDATE_KV for key \"" + userStateKey + "\"" );
 
     // The "type" param parses the string into a JSON object
-    const kvData = await env.LETSVALIDATE_KV.get(userStateKey);
+    const kvData = await env.LETSVALIDATE_KV.get(userStateKey, { type: 'json' } );
 
-    let returnData = [];
+    let returnData = null; 
     if ( kvData === null ) {
         console.log("No Worker KV entry for user " + userId );
     } else {
@@ -144,21 +144,35 @@ async function handleMonitoredCertificates(request: Request, env: Env): Promise<
 
     const kvData = await getKvDataForUser(env, userId);
 
+    if ( kvData === null ) {
+        return new Response( 
+            JSON.stringify( { "error": "no database entry for Cognito user " + userId } ),
+
+            { 
+                headers : createHeaders(),
+                status  : 404
+            }
+        );
+    }
+
     //console.log("KV data we're putting in the return obj: " + JSON.stringify(kvData));
 
     const returnObj = {
-        'monitored_certificates'    : kvData,
+        'monitored_certificates'    : kvData['monitored_certificates'],
         'metadata': {
             'api_endpoint': {
                 'datacenter_iata_code'                          : "cf/" + cloudflareRequestProperties.colo.toLowerCase(),
                 'client_geoip_iso_3166_alpha_2_country_code'    : request.cf.country,
             },
+            'data_timestamp'        : kvData['metadata']['data_timestamp'],
+            'authoritative_data'    : false,
         },
     }
 
     return new Response( 
         JSON.stringify( returnObj, null, 2 ), { headers: createHeaders() } );
 }
+
 
 // Preflight
 router.options( '/api/v001/*', () => new Response( null, { headers: createHeaders(), status: 204 } ));
