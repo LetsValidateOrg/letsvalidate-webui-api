@@ -8,7 +8,7 @@ const router = Router();
 function createHeaders() { 
     return {
         'Content-Type':                 'application/json;charset=UTF-8',
-        'Access-Control-Allow-Origin':  'https://letsvalidate.org',
+        'Access-Control-Allow-Origin':  '*',
         'Access-Control-Allow-Methods': 'OPTIONS, GET, POST, PUT, DELETE',
         'Access-Control-Allow-Headers': 'Authorization',
     };
