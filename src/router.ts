@@ -158,7 +158,7 @@ async function handleMonitoredCertificates(request: Request, env: Env): Promise<
     //console.log("KV data we're putting in the return obj: " + JSON.stringify(kvData));
 
     const returnObj = {
-        'monitored_certificates'    : kvData['monitored_certificates'],
+        'monitors'    : kvData['monitors'],
         'metadata': {
             'api_endpoint': {
                 'datacenter_iata_code'                          : "cf/" + cloudflareRequestProperties.colo.toLowerCase(),
@@ -178,7 +178,7 @@ async function handleMonitoredCertificates(request: Request, env: Env): Promise<
 router.options( '/api/v001/*', () => new Response( null, { headers: createHeaders(), status: 204 } ));
 
 // GET user's list of monitored certs
-router.get( '/api/v001/monitored-certificates', (request, env) => handleMonitoredCertificates(request, env) );
+router.get( '/api/v001/monitors', (request, env) => handleMonitoredCertificates(request, env) );
 
 // 404 for everything else
 router.all('*', () => new Response('Not Found.', { status: 404 }));
